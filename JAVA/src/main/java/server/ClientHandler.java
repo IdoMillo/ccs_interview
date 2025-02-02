@@ -1,47 +1,87 @@
 package server;
 
-import server.GameLogic;
 import java.io.*;
 import java.net.*;
 
 class ClientHandler extends Thread {
-    private final Socket clientSocket;
-    private final GameLogic gameLogic;
+    private final Socket player1Socket;
+    private final Socket player2Socket;
+    private GameLogic gameLogic; // Allows resetting for new games
 
-    public ClientHandler(Socket socket) {
-        this.clientSocket = socket;
-        this.gameLogic = new GameLogic();
+    public ClientHandler(Socket player1, Socket player2) {
+        this.player1Socket = player1;
+        this.player2Socket = player2;
+        this.gameLogic = new GameLogic(); // Generates a random secret number
     }
 
     public void run() {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+        try (
+                BufferedReader in1 = new BufferedReader(new InputStreamReader(player1Socket.getInputStream()));
+                PrintWriter out1 = new PrintWriter(player1Socket.getOutputStream(), true);
+                BufferedReader in2 = new BufferedReader(new InputStreamReader(player2Socket.getInputStream()));
+                PrintWriter out2 = new PrintWriter(player2Socket.getOutputStream(), true)
+        ) {
+            boolean playAgain = true; // Controls the game loop
 
-            out.println("Welcome to the Guessing Game! Enter a number between 1 and 100.");
-            String inputLine;
+            while (playAgain) {
+                gameLogic = new GameLogic(); // Reset game logic for a new round
+                out1.println("New game started! Player 1, start guessing.");
+                out2.println("New game started! Player 2, start guessing.");
 
-            while ((inputLine = in.readLine()) != null) {
-                try {
-                    int guess = gameLogic.validateGuess(inputLine);
-                    boolean isCorrect = gameLogic.checkGuessCorrectness(guess);
-                    String prefix = gameLogic.generatePrefix(guess);
+                boolean guessedCorrectly = false;
+                while (!guessedCorrectly) {
+                    int currentPlayer = gameLogic.getCurrentPlayer();
+                    Socket currentSocket = (currentPlayer == 1) ? player1Socket : player2Socket;
+                    PrintWriter currentOut = (currentPlayer == 1) ? out1 : out2;
+                    BufferedReader currentIn = (currentPlayer == 1) ? in1 : in2;
 
-                    if (isCorrect) {
-                        out.println(prefix + " Congratulations! You guessed correctly!");
-                        break;
-                    } else {
-                        out.println(prefix + " Try again!");
+                    currentOut.println("Your turn to guess:");
+                    String guessStr = currentIn.readLine();
+                    try {
+                        int guess = gameLogic.validateGuess(guessStr);
+                        guessedCorrectly = gameLogic.checkGuessCorrectness(guess);
+                        String prefix = gameLogic.generatePrefix(guess);
+
+                        if (guessedCorrectly) {
+                            currentOut.println(prefix + " Congratulations! You guessed correctly!");
+                            if (currentPlayer == 1) {
+                                out2.println("Player 1 guessed correctly! Game over.");
+                            } else {
+                                out1.println("Player 2 guessed correctly! Game over.");
+                            }
+                        } else {
+                            currentOut.println(prefix + " Incorrect guess. Try again.");
+                            if (currentPlayer == 1) {
+                                out2.println("Player 1 guessed: " + guess);
+                            } else {
+                                out1.println("Player 2 guessed: " + guess);
+                            }
+                        }
+                        gameLogic.updateState();
+                    } catch (IllegalArgumentException e) {
+                        currentOut.println(e.getMessage());
                     }
-                } catch (IllegalArgumentException e) {
-                    out.println(e.getMessage());
                 }
-                gameLogic.updateState();
+
+                // Ask both players if they want to play again
+                out1.println("Do you want to play again? (yes/no)");
+                out2.println("Do you want to play again? (yes/no)");
+
+                String response1 = in1.readLine().trim().toLowerCase();
+                String response2 = in2.readLine().trim().toLowerCase();
+
+                if (!response1.equals("yes") || !response2.equals("yes")) {
+                    playAgain = false;
+                    out1.println("Thanks for playing!");
+                    out2.println("Thanks for playing!");
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             try {
-                clientSocket.close();
+                player1Socket.close();
+                player2Socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
