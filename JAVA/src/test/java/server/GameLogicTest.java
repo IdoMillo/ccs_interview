@@ -8,7 +8,7 @@ class GameLogicTest {
 
     @Test
     void testValidateGuess() {
-        // Guess correctness
+        // Guess Validation
         String outOfBounds = "Number out of range, please guess between 1 and 100.";
         String invalidIn = "Invalid input, please enter a number.";
         Exception exception = assertThrows(IllegalArgumentException.class, () -> gameLogic.validateGuess("1"));
@@ -18,8 +18,9 @@ class GameLogicTest {
         exception = assertThrows(IllegalArgumentException.class, () -> gameLogic.validateGuess("abc"));
         assertEquals(invalidIn, exception.getMessage());
 
-        // Number generator
+        // Guess Correctness
         int secret = gameLogic.getSecretNumber();
         assertTrue(gameLogic.checkGuessCorrectness(secret));
+        assertFalse(gameLogic.checkGuessCorrectness(secret + 1));
     }
 }

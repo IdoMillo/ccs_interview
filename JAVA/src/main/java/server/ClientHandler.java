@@ -1,6 +1,6 @@
 package server;
 
-import game.GameLogic;
+import server.GameLogic;
 import java.io.*;
 import java.net.*;
 
@@ -24,8 +24,7 @@ class ClientHandler extends Thread {
                 try {
                     int guess = gameLogic.validateGuess(inputLine);
                     boolean isCorrect = gameLogic.checkGuessCorrectness(guess);
-                    prefix = ""
-//                     String prefix = gameLogic.generatePrefix(guess);
+                    String prefix = gameLogic.generatePrefix(guess);
 
                     if (isCorrect) {
                         out.println(prefix + " Congratulations! You guessed correctly!");
@@ -36,6 +35,7 @@ class ClientHandler extends Thread {
                 } catch (IllegalArgumentException e) {
                     out.println(e.getMessage());
                 }
+                gameLogic.updateState();
             }
         } catch (IOException e) {
             e.printStackTrace();

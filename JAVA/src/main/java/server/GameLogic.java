@@ -6,6 +6,16 @@ public class GameLogic {
     private final int PRIMES_LIMIT = 17;
     private final Random random = new Random();
     private int secretNumber;
+    private int currentPlayer;
+
+    public GameLogic() {
+        generateSecret();
+        this.currentPlayer = 1;
+    }
+
+    public int getSecretNumber() {
+        return secretNumber;
+    }
 
     private boolean isPrime(int number) {
         if (number < 2) {
@@ -57,7 +67,7 @@ public class GameLogic {
         else if (this.secretNumber < 50) this.secretNumber *= 2;
     }
 
-    private void generateSecret() {
+    public void generateSecret() {
         this.secretNumber = random.nextInt(101);
         int[] primes = getPrimeArray();
         if (secretNumber % 2 == 0){
@@ -82,10 +92,10 @@ public class GameLogic {
     }
 
     public boolean checkGuessCorrectness(int guess) {
-        return guess == secretNumber;
+        return guess == this.secretNumber;
     }
 
-    public void generatePrefix(int guess) {
+    public String generatePrefix(int guess) {
         int formatChoice = random.nextInt(3);
         String prefix;
 
@@ -116,7 +126,17 @@ public class GameLogic {
             prefix += " Your guess is in the high-risk zone!";
         }
 
-        System.out.println(prefix);  // Prints the prefix instead of returning it
+        return prefix;
+    }
+
+    // Multiplayer methods
+
+    public void updateState(){
+        this.currentPlayer = (this.currentPlayer + 1) % 2;
+    }
+
+    public int getCurrentPlayer() {
+        return this.currentPlayer;
     }
 }
 
